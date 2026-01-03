@@ -17,6 +17,10 @@ end = '2025-12-20'
 
 data = yf.download(stock, start, end)
 
+if data.empty:
+    st.write("Enter a valid ticker symbol")
+    st.stop()  # This stops the app here so it doesn't crash later
+
 st.subheader('Stock Data ')
 st.write(data)
 
