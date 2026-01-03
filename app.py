@@ -84,7 +84,8 @@ plt.plot(y, 'r', label='Original Price')
 plt.plot(predict, 'b', label='Predicted Price')
 plt.xlabel('Time')
 plt.ylabel('Price')
-# # plt.show()
+plt.legend()
+plt.show()
 st.pyplot(fig4)
 
 # # --- FUTURE PREDICTION LOGIC ---
