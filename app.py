@@ -174,3 +174,35 @@ plt.xlabel('Days')
 plt.ylabel('Price')
 plt.legend()
 st.pyplot(fig5)
+
+
+# LIVE ACCURACY DASHBOARD ---
+st.divider()  # Adds a divider line
+st.subheader("Live Accuracy Dashboard")
+
+# 1. Fetch the absolute latest price from Yahoo Finance
+live_data = yf.Ticker(stock).history(period="1d")
+latest_price = live_data['Close'].iloc[-1]
+
+# 2. Get your Predicted Price (Day 1 of the future loop)
+predicted_next_close = lst_output[0][0]
+
+# 3. Calculate the difference
+difference = predicted_next_close - latest_price
+
+# 4. Display nicely with Streamlit Metrics
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric(label="Latest Market Price", value=f"${latest_price:.2f}")
+
+with col2:
+    st.metric(label="Predicted Next Close", value=f"${predicted_next_close:.2f}")
+
+with col3:
+    # This shows the difference. 
+    # Green means the model predicts the price will go UP.
+    # Red means the model predicts the price will go DOWN.
+    st.metric(label="Expected Change", value=f"${difference:.2f}", delta=f"{difference:.2f}")
+
+st.caption("Note: 'Latest Market Price' is the closing price of the last trading session.")
