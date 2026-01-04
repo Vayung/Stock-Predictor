@@ -4,28 +4,47 @@ import yfinance as yf
 from keras.models import load_model
 import streamlit as st
 import matplotlib.pyplot as plt
+from datetime import date, timedelta
 
-# Add 'r' right here v
-# model = load_model(r'C:\Users\Taiwo\STOCK\Stock Predictions Model.keras')
+
+st.set_page_config(
+    page_title="StockVision",  # The name on the browser tab
+    page_icon="📈",              # The little icon on the tab
+    
+)
+
+# --- HIDE STREAMLIT STYLE ---
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
+
 model = load_model('Stock Predictions Model.keras')
 
 st.header('Stock Price Prediction App')
+st.sidebar.write("Navigate the financial markets with AI-powered insights.")
 
 stock= st.text_input('Enter Stock Symbol', 'NVDA')
 start = '2015-01-01' 
-end = '2025-12-20'
+end = date.today().strftime("%Y-%m-%d")
 
 data = yf.download(stock, start, end)
 
 if data.empty:
-    st.write("Enter a valid ticker symbol")
+    st.error("Invalid Ticker Symbol. Please enter a valid stock (e.g., AAPL, TSLA).")
     st.stop()  # This stops the app here so it doesn't crash later
 
 st.subheader('Stock Data ')
 st.write(data)
 
 data_train = pd.DataFrame(data.Close[0: int(len(data)*0.80)])
-# Create a new column named 'test' using bracket notation
+
+#A new column named 'test' 
 data_test = pd.DataFrame(data.Close[int(len(data) * 0.8): len(data)])
 
 from sklearn.preprocessing import MinMaxScaler # type: ignore
@@ -35,35 +54,21 @@ pas_100_days = data_train.tail(100)
 data_test = pd.concat([pas_100_days, data_test], ignore_index=True)
 data_test_scaler = scaler.fit_transform(data_test)
 
-st.subheader('Price vs MA50')
+st.subheader('Technical Analysis (MA50 vs MA200)')
+
+#Calculates the standard "Golden Cross" indicators
 ma_50_days = data.Close.rolling(50).mean()
-fig1 = plt.figure(figsize=(8,6))
-plt.plot(ma_50_days, 'r', label='MA50')
+ma_200_days = data.Close.rolling(200).mean()
+
+fig1 = plt.figure(figsize=(10,6))
 plt.plot(data.Close, 'g', label='Price')
+plt.plot(ma_50_days, 'r', label='MA50 (Short Term)')
+plt.plot(ma_200_days, 'b', label='MA200 (Long Term)')
+plt.xlabel('Time')
+plt.ylabel('Price')
 plt.legend()
 plt.show()
 st.pyplot(fig1)
-
-st.subheader('Price vs MA50 vs MA100')
-ma_100_days = data.Close.rolling(100).mean()
-fig2 = plt.figure(figsize=(8,6))
-plt.plot(ma_50_days, 'r', label='MA50')
-plt.plot(ma_100_days, 'b', label='MA100')
-plt.plot(data.Close, 'g', label='Price')
-plt.legend()                                  # Important!
-plt.show()
-st.pyplot(fig2)
-
-st.subheader('Price vs MA100 vs MA200')
-ma_200_days = data.Close.rolling(200).mean()
-fig3 = plt.figure(figsize=(8,6))
-plt.plot(ma_100_days, 'r', label='MA100')
-plt.plot(ma_200_days, 'b', label='MA200')
-plt.plot(data.Close, 'g', label='Price')
-plt.legend()
-plt.show()
-st.pyplot(fig3)
-
 
 x = []
 y = []
@@ -92,32 +97,7 @@ plt.legend()
 plt.show()
 st.pyplot(fig4)
 
-# # --- FUTURE PREDICTION LOGIC ---
 
-# st.subheader('Prediction for Tomorrow')
-
-# # 1. Get the last 100 days of data from your existing 'data_test' dataframe
-# last_100_days = data_test.tail(100)
-
-# # 2. Scale this data (just like we did for the training data)
-# last_100_days_scaled = scaler.transform(last_100_days)
-
-# # 3. Reshape it to the format the LSTM model expects: (1 sample, 100 time steps, 1 feature)
-# X_future = []
-# X_future.append(last_100_days_scaled)
-# X_future = np.array(X_future)
-# X_future = np.reshape(X_future, (X_future.shape[0], X_future.shape[1], 1))
-
-# # 4. Make the prediction
-# predicted_price = model.predict(X_future)
-
-# # 5. Undo the scaling to get the actual price in Dollars
-# predicted_price_actual = predicted_price * scale
-
-# # 6. Display the result
-# st.write(f"The predicted price for the next trading day is: **${predicted_price_actual[0][0]:.2f}**")
-
-# --- FUTURE PREDICTION LOGIC (GRAPH & PRICE) ---
 
 st.subheader('Future Price Prediction (Next 30 Days)')
 
@@ -153,8 +133,19 @@ while(i < future_days):
 # 3. Convert predictions back to original prices (Dollars)
 lst_output = scaler.inverse_transform(lst_output)
 
-# 4. Display the specific price for "Tomorrow" (Day 1 of prediction)
-st.write(f"Predicted Price for Tomorrow: **${lst_output[0][0]:.2f}**")
+# LOGIC FOR NEXT TRADING DAY 
+today = date.today()
+weekday_num = today.weekday() # 0=Monday, 1=Tuesday, ... 4=Friday, 5=Saturday, 6=Sunday
+
+if weekday_num >= 4: # If it is Friday(4), Saturday(5), or Sunday(6)
+    next_day_text = "Monday"
+else:
+    # If it is Mon-Thu, the next trading day is just tomorrow
+    next_date = today + timedelta(days=1)
+    next_day_text = next_date.strftime("%A") # %A gives the full name (e.g., "Tuesday")
+
+st.subheader(f'Predicted Price for {next_day_text}')
+
 
 # 5. Create a graph for the future predictions
 fig5 = plt.figure(figsize=(10, 6))
@@ -200,9 +191,15 @@ with col2:
     st.metric(label="Predicted Next Close", value=f"${predicted_next_close:.2f}")
 
 with col3:
-    # This shows the difference. 
     # Green means the model predicts the price will go UP.
     # Red means the model predicts the price will go DOWN.
     st.metric(label="Expected Change", value=f"${difference:.2f}", delta=f"{difference:.2f}")
 
 st.caption("Note: 'Latest Market Price' is the closing price of the last trading session.")
+
+with st.sidebar.expander("About the Model"):
+    st.write(
+        "This app uses a **Long Short-Term Memory (LSTM)** neural network. "
+        "It is trained on historical data from Yahoo Finance to recognize "
+        "price patterns and forecast future trends."
+    )
