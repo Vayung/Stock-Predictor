@@ -167,33 +167,73 @@ plt.legend()
 st.pyplot(fig5)
 
 
-# LIVE ACCURACY DASHBOARD ---
-st.divider()  # Adds a divider line
+# # LIVE ACCURACY DASHBOARD ---
+# st.divider()  # Adds a divider line
+# st.subheader("Live Accuracy Dashboard")
+
+# # 1. Fetch the absolute latest price from Yahoo Finance
+# live_data = yf.Ticker(stock).history(period="1d")
+# latest_price = live_data['Close'].iloc[-1]
+
+# # 2. Get your Predicted Price (Day 1 of the future loop)
+# predicted_next_close = lst_output[0][0]
+
+# # 3. Calculate the difference
+# difference = predicted_next_close - latest_price
+
+# # 4. Display nicely with Streamlit Metrics
+# col1, col2, col3 = st.columns(3)
+
+# with col1:
+#     st.metric(label="Latest Market Price", value=f"${latest_price:.2f}")
+
+# with col2:
+#     st.metric(label="Predicted Next Close", value=f"${predicted_next_close:.2f}")
+
+# with col3:
+#     # Green means the model predicts the price will go UP.
+#     # Red means the model predicts the price will go DOWN.
+#     st.metric(label="Expected Change", value=f"${difference:.2f}", delta=f"{difference:.2f}")
+
+# st.caption("Note: 'Latest Market Price' is the closing price of the last trading session.")
+
+
+# --- LIVE ACCURACY DASHBOARD ---
+st.divider()  # Adds a nice divider line
 st.subheader("Live Accuracy Dashboard")
 
 # 1. Fetch the absolute latest price from Yahoo Finance
 live_data = yf.Ticker(stock).history(period="1d")
-latest_price = live_data['Close'].iloc[-1]
 
-# 2. Get your Predicted Price (Day 1 of the future loop)
-predicted_next_close = lst_output[0][0]
+# --- SAFETY CHECK: CRUCIAL FIX ---
+if live_data.empty:
+    st.warning(f"Could not fetch live data for '{stock}'. The market might be closed or the ticker requires a suffix (e.g., 'TF.TO').")
+else:
+    latest_price = live_data['Close'].iloc[-1]
 
-# 3. Calculate the difference
-difference = predicted_next_close - latest_price
+    # 2. Get your Predicted Price (Day 1 of the future loop)
+    # Note: We use the 'lst_output' variable from the graph code you added earlier
+    # Make sure lst_output exists (it comes from your prediction logic)
+    if 'lst_output' in locals() and len(lst_output) > 0:
+        predicted_next_close = lst_output[0][0]
 
-# 4. Display nicely with Streamlit Metrics
-col1, col2, col3 = st.columns(3)
+        # 3. Calculate the difference
+        difference = predicted_next_close - latest_price
 
-with col1:
-    st.metric(label="Latest Market Price", value=f"${latest_price:.2f}")
+        # 4. Display nicely with Streamlit Metrics
+        col1, col2, col3 = st.columns(3)
 
-with col2:
-    st.metric(label="Predicted Next Close", value=f"${predicted_next_close:.2f}")
+        with col1:
+            st.metric(label="Latest Market Price", value=f"${latest_price:.2f}")
 
-with col3:
-    # Green means the model predicts the price will go UP.
-    # Red means the model predicts the price will go DOWN.
-    st.metric(label="Expected Change", value=f"${difference:.2f}", delta=f"{difference:.2f}")
+        with col2:
+            st.metric(label="Predicted Next Close", value=f"${predicted_next_close:.2f}")
+
+        with col3:
+            st.metric(label="Expected Change", value=f"${difference:.2f}", delta=f"{difference:.2f}")
+
+    else:
+        st.write("Prediction data not available yet.")
 
 st.caption("Note: 'Latest Market Price' is the closing price of the last trading session.")
 
