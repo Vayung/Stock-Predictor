@@ -15,9 +15,11 @@ st.set_page_config(
 #  HIDE STREAMLIT STYLE 
 hide_st_style = """
             <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
+            #MainMenu {visibility: hidden;}  /* Hides the 3-dot menu at top right */
+            footer {visibility: hidden;}     /* Hides the 'Made with Streamlit' footer */
+            .stAppDeployButton {display:none;} /* Hides the 'Deploy' button */
+            
+            /* WE REMOVED 'header {visibility: hidden;}' so the sidebar button stays visible! */
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -79,9 +81,9 @@ end = date.today().strftime("%Y-%m-%d")
 
 data = yf.download(stock, start, end)
 
-# ------------------------------------------------------------------
+
 # 2. DATA FIX: IGNORE INCOMPLETE DAY (ADDED)
-# ------------------------------------------------------------------
+
 # Determine time in Nigeria
 lagos_tz = pytz.timezone('Africa/Lagos')
 now_lagos = datetime.now(lagos_tz)
@@ -90,7 +92,7 @@ now_lagos = datetime.now(lagos_tz)
 if now_lagos.hour < 22:
     if len(data) > 0 and data.index[-1].date() == date.today():
         data = data[:-1]
-# ------------------------------------------------------------------
+
 
 
 if data.empty:
@@ -178,9 +180,9 @@ while(i < future_days):
 
 lst_output = scaler.inverse_transform(lst_output)
 
-# ------------------------------------------------------------------
+
 # 3. LOGIC FOR NEXT TRADING DAY (UPDATED FOR NIGERIA TIME)
-# ------------------------------------------------------------------
+
 current_hour_lagos = now_lagos.hour
 today_day_name = now_lagos.strftime("%A")
 today_weekday = now_lagos.weekday() 
@@ -197,7 +199,7 @@ else:
         next_day_text = next_date.strftime("%A")
 
 st.subheader(f'Predicted Price for {next_day_text}')
-# ------------------------------------------------------------------
+#
 
 
 fig5 = plt.figure(figsize=(10, 6))
@@ -215,7 +217,7 @@ st.pyplot(fig5)
 
 
 
-# 4. LIVE ACCURACY DASHBOARD (UPDATED LABEL)
+#  LIVE ACCURACY DASHBOARD (UPDATED LABEL)
 
 st.divider() 
 st.subheader("Live Accuracy Dashboard")
@@ -224,6 +226,7 @@ live_data = yf.Ticker(stock).history(period="1d")
 
 if live_data.empty:
     st.warning(f"Could not fetch live data for '{stock}'.")
+    st.write(f"THis may be due to limited data on '{stock}'. ")
 else:
     latest_price = live_data['Close'].iloc[-1]
 
@@ -257,3 +260,22 @@ with st.sidebar.expander("About the Model"):
         "It is trained on historical data from Yahoo Finance to recognize "
         "price patterns and forecast future trends."
     )
+
+    #User Guide(Added)
+   
+    with st.sidebar.expander("📖 How to Use This App"):
+        st.markdown("""
+    **Step 1: Check the 'Target Close'**
+    * Look at the dashboard. This number is the AI's predicted closing price for the current (or next) trading session.
+    
+    **Step 2: Compare with 'Live Price'**
+    * **Green Difference (+):** The Live Price is *below* the Target. The AI thinks the price might **rise** to meet the target.
+    * **Red Difference (-):** The Live Price is *above* the Target. The AI thinks the price might **fall** to meet the target.
+    
+    **Step 3: Check the Trend (Chart)**
+    * Look at the **Technical Analysis** chart.
+    * If the **Red Line (MA50)** crosses *above* the **Blue Line (MA200)**, it is often a **Buy Signal** (Golden Cross).
+    * If it crosses *below*, it is a **Sell Signal** (Death Cross).
+    """)
+    
+    st.caption("Updated automatically every trading session.")
