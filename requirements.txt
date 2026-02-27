@@ -3,6 +3,6 @@ pandas
 yfinance
 scikit-learn
 tensorflow
-streamlit
+streamlit>=1.30.0
 matplotlib
 pytz
